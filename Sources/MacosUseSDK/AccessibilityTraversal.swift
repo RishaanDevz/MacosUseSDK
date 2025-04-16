@@ -4,6 +4,7 @@
 import AppKit // For NSWorkspace, NSRunningApplication, NSApplication
 import Foundation // For basic types, JSONEncoder, Date
 import ApplicationServices // For Accessibility API (AXUIElement, etc.)
+import WebKit // For WKWebView interactions
 
 // --- Error Enum ---
 public enum MacosUseSDKError: Error, LocalizedError {
@@ -11,6 +12,7 @@ public enum MacosUseSDKError: Error, LocalizedError {
     case appNotFound(pid: Int32)
     case jsonEncodingFailed(Error)
     case internalError(String) // For unexpected issues
+    case browserScriptError(String) // For browser script injection errors
 
     public var errorDescription: String? {
         switch self {
@@ -22,6 +24,8 @@ public enum MacosUseSDKError: Error, LocalizedError {
             return "Failed to encode response to JSON: \(underlyingError.localizedDescription)"
         case .internalError(let message):
             return "Internal SDK error: \(message)"
+        case .browserScriptError(let message):
+            return "Browser script injection error: \(message)"
         }
     }
 }
@@ -56,6 +60,55 @@ public struct ElementData: Codable, Hashable, Sendable {
     }
 }
 
+// New structure for browser HTML content
+public struct BrowserPageData: Codable, Sendable {
+    public var url: String
+    public var title: String
+    public var html: String
+    public var extractedText: String
+    public var elements: [BrowserElementData]
+}
+
+public struct BrowserElementData: Codable, Hashable, Sendable {
+    public var tagName: String
+    public var id: String?
+    public var className: String?
+    public var text: String?
+    public var href: String?
+    public var src: String?
+    public var x: Double?
+    public var y: Double?
+    public var width: Double?
+    public var height: Double?
+    
+    // Implement Hashable for use in Set
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(tagName)
+        hasher.combine(id)
+        hasher.combine(className)
+        hasher.combine(text)
+        hasher.combine(href)
+        hasher.combine(src)
+        hasher.combine(x)
+        hasher.combine(y)
+        hasher.combine(width)
+        hasher.combine(height)
+    }
+    
+    public static func == (lhs: BrowserElementData, rhs: BrowserElementData) -> Bool {
+        lhs.tagName == rhs.tagName &&
+        lhs.id == rhs.id &&
+        lhs.className == rhs.className &&
+        lhs.text == rhs.text &&
+        lhs.href == rhs.href &&
+        lhs.src == rhs.src &&
+        lhs.x == rhs.x &&
+        lhs.y == rhs.y &&
+        lhs.width == rhs.width &&
+        lhs.height == rhs.height
+    }
+}
+
 public struct Statistics: Codable, Sendable {
     public var count: Int = 0
     public var excluded_count: Int = 0
@@ -65,6 +118,7 @@ public struct Statistics: Codable, Sendable {
     public var without_text_count: Int = 0
     public var visible_elements_count: Int = 0
     public var role_counts: [String: Int] = [:]
+    public var browser_elements_count: Int = 0 // New stat for browser elements
 }
 
 public struct ResponseData: Codable, Sendable {
@@ -72,19 +126,23 @@ public struct ResponseData: Codable, Sendable {
     public var elements: [ElementData]
     public var stats: Statistics
     public let processing_time_seconds: String
+    public var is_browser: Bool = false
+    public var browser_data: BrowserPageData?
 }
 
 
 // --- Main Public Function ---
 
 /// Traverses the accessibility tree of an application specified by its PID.
+/// For browser applications, also extracts HTML content.
 ///
 /// - Parameter pid: The Process ID (PID) of the target application.
 /// - Parameter onlyVisibleElements: If true, only collects elements with valid position and size. Defaults to false.
+/// - Parameter scrapeBrowserContent: If true, attempts to extract HTML from browsers. Defaults to true.
 /// - Returns: A `ResponseData` struct containing the collected elements, statistics, and timing information.
 /// - Throws: `MacosUseSDKError` if accessibility is denied, the app is not found, or an internal error occurs.
-public func traverseAccessibilityTree(pid: Int32, onlyVisibleElements: Bool = false) throws -> ResponseData {
-    let operation = AccessibilityTraversalOperation(pid: pid, onlyVisibleElements: onlyVisibleElements)
+public func traverseAccessibilityTree(pid: Int32, onlyVisibleElements: Bool = false, scrapeBrowserContent: Bool = true) throws -> ResponseData {
+    let operation = AccessibilityTraversalOperation(pid: pid, onlyVisibleElements: onlyVisibleElements, scrapeBrowserContent: scrapeBrowserContent)
     return try operation.executeTraversal()
 }
 
@@ -95,11 +153,25 @@ public func traverseAccessibilityTree(pid: Int32, onlyVisibleElements: Bool = fa
 fileprivate class AccessibilityTraversalOperation {
     let pid: Int32
     let onlyVisibleElements: Bool
+    let scrapeBrowserContent: Bool
     var visitedElements: Set<AXUIElement> = []
     var collectedElements: Set<ElementData> = []
     var statistics: Statistics = Statistics()
     var stepStartTime: Date = Date()
     let maxDepth = 100
+    
+    // Known browser bundle identifiers
+    let browserBundleIDs: Set<String> = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "org.mozilla.firefox",
+        "com.brave.Browser",
+        "com.microsoft.edgemac",
+        "com.operasoftware.Opera"
+    ]
+    
+    var isBrowser: Bool = false
+    var browserData: BrowserPageData?
 
     // Define roles considered non-interactable by default
     let nonInteractableRoles: Set<String> = [
@@ -109,9 +181,10 @@ fileprivate class AccessibilityTraversalOperation {
         "AXToolbar", "AXDisclosureTriangle",
     ]
 
-    init(pid: Int32, onlyVisibleElements: Bool) {
+    init(pid: Int32, onlyVisibleElements: Bool, scrapeBrowserContent: Bool) {
         self.pid = pid
         self.onlyVisibleElements = onlyVisibleElements
+        self.scrapeBrowserContent = scrapeBrowserContent
     }
 
     // --- Main Execution Method ---
@@ -139,16 +212,18 @@ fileprivate class AccessibilityTraversalOperation {
         }
         let targetAppName = runningApp.localizedName ?? "App (PID: \(pid))"
         let appElement = AXUIElementCreateApplication(pid)
-        // logStepCompletion("finding application '\(targetAppName)'") // Logging step completion implicitly here
+        
+        // Check if this is a browser
+        if let bundleID = runningApp.bundleIdentifier, browserBundleIDs.contains(bundleID) {
+            isBrowser = true
+            fputs("info: detected browser application: \(bundleID)\n", stderr)
+        }
 
         // 3. Activate App if needed
         var didActivate = false
         if runningApp.activationPolicy == NSApplication.ActivationPolicy.regular {
             if !runningApp.isActive {
-                // fputs("info: activating application '\(targetAppName)'...\n", stderr) // Optional start log
                 runningApp.activate()
-                // Consider adding a small delay or a check loop if activation timing is critical
-                // Thread.sleep(forTimeInterval: 0.2)
                 didActivate = true
             }
         }
@@ -156,13 +231,18 @@ fileprivate class AccessibilityTraversalOperation {
             logStepCompletion("activating application '\(targetAppName)'")
         }
 
-        // 4. Start Traversal
-        // fputs("info: starting accessibility tree traversal...\n", stderr) // Optional start log
+        // 4. For browsers, try to extract HTML content
+        if isBrowser && scrapeBrowserContent {
+            fputs("info: attempting to extract browser content...\n", stderr)
+            try extractBrowserContent(app: runningApp, appElement: appElement)
+            logStepCompletion("extracting browser content")
+        }
+
+        // 5. Start Accessibility Traversal
         walkElementTree(element: appElement, depth: 0)
         logStepCompletion("traversing accessibility tree (\(collectedElements.count) elements collected)")
 
-        // 5. Process Results
-        // fputs("info: sorting elements...\n", stderr) // Optional start log
+        // 6. Process Results
         let sortedElements = collectedElements.sorted {
             let y0 = $0.y ?? Double.greatestFiniteMagnitude
             let y1 = $1.y ?? Double.greatestFiniteMagnitude
@@ -171,7 +251,6 @@ fileprivate class AccessibilityTraversalOperation {
             let x1 = $1.x ?? Double.greatestFiniteMagnitude
             return x0 < x1
         }
-        // logStepCompletion("sorting \(sortedElements.count) elements") // Log implicitly
 
         // Set the final count statistic
         statistics.count = sortedElements.count
@@ -182,18 +261,215 @@ fileprivate class AccessibilityTraversalOperation {
         let formattedTime = String(format: "%.2f", totalProcessingTime)
         fputs("info: total execution time: \(formattedTime) seconds\n", stderr)
 
-        // 6. Prepare Response
+        // 7. Prepare Response
         let response = ResponseData(
             app_name: targetAppName,
             elements: sortedElements,
             stats: statistics,
-            processing_time_seconds: formattedTime
+            processing_time_seconds: formattedTime,
+            is_browser: isBrowser,
+            browser_data: browserData
         )
 
         return response
-        // JSON encoding will be handled by the caller of the library function if needed
     }
-
+    
+    // --- Browser Content Extraction ---
+    
+    func extractBrowserContent(app: NSRunningApplication, appElement: AXUIElement) throws {
+        // Get the browser's current URL and document
+        var browserURL = "unknown"
+        var browserTitle = "unknown"
+        var html = ""
+        var extractedText = ""
+        var browserElements: [BrowserElementData] = []
+        
+        // First, try to get the URL and title using accessibility API
+        if let urlValue = getURLFromBrowser(appElement: appElement) {
+            browserURL = urlValue
+        }
+        
+        if let titleValue = getTitleFromBrowser(appElement: appElement) {
+            browserTitle = titleValue
+        }
+        
+        // Use AppleScript to extract HTML content
+        let script = """
+        tell application "\(app.localizedName ?? "")"
+            set currentURL to URL of active tab of front window
+            set pageTitle to name of front window
+            set pageContent to execute front window's active tab javascript "
+                (function() {
+                    // Extract full HTML
+                    var htmlContent = document.documentElement.outerHTML;
+                    
+                    // Extract visible text
+                    var textContent = Array.from(document.querySelectorAll('body, body *'))
+                        .filter(el => {
+                            var style = window.getComputedStyle(el);
+                            return style.display !== 'none' && 
+                                   style.visibility !== 'hidden' && 
+                                   style.opacity !== '0' &&
+                                   el.offsetWidth > 0 &&
+                                   el.offsetHeight > 0;
+                        })
+                        .map(el => el.textContent)
+                        .filter(text => text.trim().length > 0)
+                        .join('\\n');
+                    
+                    // Extract important elements with positions
+                    var elements = [];
+                    var interactiveElements = document.querySelectorAll('a, button, input, select, textarea, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab]');
+                    
+                    interactiveElements.forEach(function(el) {
+                        if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+                            var rect = el.getBoundingClientRect();
+                            elements.push({
+                                tagName: el.tagName.toLowerCase(),
+                                id: el.id || null,
+                                className: el.className || null,
+                                text: el.textContent.trim() || null,
+                                href: el.href || null,
+                                src: el.src || null,
+                                x: rect.left,
+                                y: rect.top,
+                                width: rect.width,
+                                height: rect.height
+                            });
+                        }
+                    });
+                    
+                    return JSON.stringify({
+                        html: htmlContent,
+                        text: textContent,
+                        elements: elements
+                    });
+                })();
+            "
+            return pageContent
+        end tell
+        """
+        
+        do {
+            let appleScriptResult = try runAppleScript(script)
+            if let data = appleScriptResult.data(using: .utf8) {
+                if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                    html = json["html"] as? String ?? ""
+                    extractedText = json["text"] as? String ?? ""
+                    
+                    // Process browser elements
+                    if let elements = json["elements"] as? [[String: Any]] {
+                        for element in elements {
+                            let browserElement = BrowserElementData(
+                                tagName: element["tagName"] as? String ?? "unknown",
+                                id: element["id"] as? String,
+                                className: element["className"] as? String,
+                                text: element["text"] as? String,
+                                href: element["href"] as? String,
+                                src: element["src"] as? String,
+                                x: element["x"] as? Double,
+                                y: element["y"] as? Double,
+                                width: element["width"] as? Double,
+                                height: element["height"] as? Double
+                            )
+                            browserElements.append(browserElement)
+                        }
+                        statistics.browser_elements_count = browserElements.count
+                    }
+                }
+            }
+        } catch {
+            fputs("warning: failed to extract HTML using AppleScript: \(error.localizedDescription)\n", stderr)
+        }
+        
+        // Create browser data
+        browserData = BrowserPageData(
+            url: browserURL,
+            title: browserTitle,
+            html: html,
+            extractedText: extractedText,
+            elements: browserElements
+        )
+    }
+    
+    func getURLFromBrowser(appElement: AXUIElement) -> String? {
+        // Try to get URL from various accessibility attributes that browsers might use
+        guard let windowsValue = copyAttributeValue(element: appElement, attribute: kAXWindowsAttribute as String),
+              let windowsArray = windowsValue as? [AXUIElement],
+              let mainWindow = windowsArray.first else {
+            return nil
+        }
+        
+        // Different browsers store URL in different places, try several common patterns
+        // 1. Check for AXDocument attribute
+        if let docValue = copyAttributeValue(element: mainWindow, attribute: kAXDocumentAttribute as String) {
+            if let url = getStringValue(docValue) {
+                return url
+            }
+        }
+        
+        // 2. Try to find URL in the toolbar
+        if let toolbarValue = findElementByRole(element: mainWindow, role: "AXToolbar") {
+            if let textFieldValue = findElementByRole(element: toolbarValue, role: "AXTextField") {
+                if let urlValue = copyAttributeValue(element: textFieldValue, attribute: kAXValueAttribute as String) {
+                    if let url = getStringValue(urlValue) {
+                        return url
+                    }
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    func getTitleFromBrowser(appElement: AXUIElement) -> String? {
+        // Try to get title from the main window
+        guard let windowsValue = copyAttributeValue(element: appElement, attribute: kAXWindowsAttribute as String),
+              let windowsArray = windowsValue as? [AXUIElement],
+              let mainWindow = windowsArray.first else {
+            return nil
+        }
+        
+        // Get title from window title
+        if let titleValue = copyAttributeValue(element: mainWindow, attribute: kAXTitleAttribute as String) {
+            return getStringValue(titleValue)
+        }
+        
+        return nil
+    }
+    
+    func findElementByRole(element: AXUIElement, role: String) -> AXUIElement? {
+        // Check if this element has the requested role
+        if let roleValue = copyAttributeValue(element: element, attribute: kAXRoleAttribute as String),
+           let elementRole = getStringValue(roleValue),
+           elementRole == role {
+            return element
+        }
+        
+        // Check children
+        if let childrenValue = copyAttributeValue(element: element, attribute: kAXChildrenAttribute as String),
+           let childrenArray = childrenValue as? [AXUIElement] {
+            for child in childrenArray {
+                if let foundElement = findElementByRole(element: child, role: role) {
+                    return foundElement
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    func runAppleScript(_ script: String) throws -> String {
+        let appleScript = NSAppleScript(source: script)
+        var error: NSDictionary?
+        guard let result = appleScript?.executeAndReturnError(&error) else {
+            if let error = error {
+                throw MacosUseSDKError.browserScriptError(error.description)
+            }
+            throw MacosUseSDKError.browserScriptError("Unknown AppleScript error")
+        }
+        return result.stringValue ?? ""
+    }
 
     // --- Helper Functions (now methods of the class) ---
 
@@ -231,7 +507,6 @@ fileprivate class AccessibilityTraversalOperation {
         if AXValueGetValue(axValue, .cgPoint, &pointValue) {
             return pointValue
         }
-        // fputs("warning: failed to extract cgpoint from axvalue.\n", stderr)
         return nil
     }
 
@@ -243,7 +518,6 @@ fileprivate class AccessibilityTraversalOperation {
         if AXValueGetValue(axValue, .cgSize, &sizeValue) {
             return sizeValue
         }
-        // fputs("warning: failed to extract cgsize from axvalue.\n", stderr)
         return nil
     }
 
@@ -277,16 +551,10 @@ fileprivate class AccessibilityTraversalOperation {
 
         if let posValue = copyAttributeValue(element: element, attribute: kAXPositionAttribute as String) {
             position = getCGPointValue(posValue)
-            // if position == nil { fputs("debug: failed to get position for element (role: \(role))\n", stderr) }
-        } else {
-            // fputs("debug: position attribute ('\(kAXPositionAttribute)') not found or unsupported for element (role: \(role))\n", stderr)
         }
 
         if let sizeValue = copyAttributeValue(element: element, attribute: kAXSizeAttribute as String) {
             size = getCGSizeValue(sizeValue)
-             // if size == nil { fputs("debug: failed to get size for element (role: \(role))\n", stderr) }
-        } else {
-             // fputs("debug: size attribute ('\(kAXSizeAttribute)') not found or unsupported for element (role: \(role))\n", stderr)
         }
 
         return (role, roleDesc, combinedText, textParts, position, size)
@@ -296,7 +564,6 @@ fileprivate class AccessibilityTraversalOperation {
     func walkElementTree(element: AXUIElement, depth: Int) {
         // 1. Check for cycles and depth limit
         if visitedElements.contains(element) || depth > maxDepth {
-            // fputs("debug: skipping visited or too deep element (depth: \(depth))\n", stderr)
             return
         }
         visitedElements.insert(element)
@@ -346,16 +613,9 @@ fileprivate class AccessibilityTraversalOperation {
             )
 
             if collectedElements.insert(elementData).inserted {
-                // Log addition (optional)
-                // let geometryStatus = isGeometricallyVisible ? "visible" : "not_visible"
-                // fputs("debug: + collect [\(geometryStatus)] | r: \(displayRole) | t: '\(combinedText ?? "nil")'\n", stderr)
-
                 // Update text counts only for collected elements
                 if hasText { statistics.with_text_count += 1 }
                 else { statistics.without_text_count += 1 }
-            } else {
-                // Log duplicate (optional)
-                // fputs("debug: = skip duplicate | r: \(displayRole) | t: '\(combinedText ?? "nil")'\n", stderr)
             }
         } else {
             // Log exclusion (MODIFIED logic)
@@ -368,13 +628,9 @@ fileprivate class AccessibilityTraversalOperation {
             if passesOriginalFilter && onlyVisibleElements && !isGeometricallyVisible {
                 reasons.append("not visible")
             }
-            // fputs("debug: - exclude | r: \(role) | reason(s): \(reasons.joined(separator: ", "))\n", stderr)
 
             // Update exclusion counts
             statistics.excluded_count += 1
-            // Note: The specific exclusion reasons (non-interactable, no-text) might be slightly less precise
-            // if an element is excluded *only* because it's invisible, but this keeps the stats simple.
-            // We can refine this if needed.
             if isNonInteractable { statistics.excluded_non_interactable += 1 }
             if !hasText { statistics.excluded_no_text += 1 }
         }
@@ -386,8 +642,6 @@ fileprivate class AccessibilityTraversalOperation {
                 for windowElement in windowsArray where !visitedElements.contains(windowElement) {
                     walkElementTree(element: windowElement, depth: depth + 1)
                 }
-            } else if CFGetTypeID(windowsValue) == CFArrayGetTypeID() {
-                // fputs("warning: attribute \(kAXWindowsAttribute) was CFArray but failed bridge to [AXUIElement]\n", stderr)
             }
         }
 
@@ -398,8 +652,6 @@ fileprivate class AccessibilityTraversalOperation {
                  if !visitedElements.contains(mainWindowElement) {
                      walkElementTree(element: mainWindowElement, depth: depth + 1)
                  }
-            } else {
-                 // fputs("warning: attribute \(kAXMainWindowAttribute) was not an AXUIElement\n", stderr)
             }
         }
 
@@ -409,12 +661,9 @@ fileprivate class AccessibilityTraversalOperation {
                 for childElement in childrenArray where !visitedElements.contains(childElement) {
                     walkElementTree(element: childElement, depth: depth + 1)
                 }
-            } else if CFGetTypeID(childrenValue) == CFArrayGetTypeID() {
-                // fputs("warning: attribute \(kAXChildrenAttribute) was CFArray but failed bridge to [AXUIElement]\n", stderr)
             }
         }
     }
-
 
     // Helper function logs duration of the step just completed
     func logStepCompletion(_ stepDescription: String) {
