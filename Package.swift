@@ -31,6 +31,9 @@ let package = Package(
         .executable(
             name: "ActionTool",
             targets: ["ActionTool"]),
+        .executable(
+            name: "OutputControllerTool",
+            targets: ["OutputControllerTool"]),
     ],
     dependencies: [
         // Add any external package dependencies here later if needed
@@ -70,6 +73,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "ActionTool",
+            dependencies: ["MacosUseSDK"]
+        ),
+        .executableTarget(
+            name: "OutputControllerTool",
             dependencies: ["MacosUseSDK"]
         ),
         .testTarget(
