@@ -168,4 +168,42 @@ public enum OutputController {
 
 // MARK: - C Constants for Display Info
 private let kDisplayVendorID = "DisplayVendorID"
-private let kDisplayProductID = "DisplayProductID" 
+private let kDisplayProductID = "DisplayProductID"
+
+public enum OutputControllerAction: String, Codable {
+    case setVolume = "set-volume"
+    case getVolume = "get-volume"
+    case setBrightness = "set-brightness"
+    case getBrightness = "get-brightness"
+}
+
+public struct OutputControllerResult: Codable {
+    public let value: Float?
+    public let message: String
+}
+
+public func outputControllerTool(
+    action: OutputControllerAction,
+    value: Float? = nil
+) throws -> OutputControllerResult {
+    switch action {
+    case .setVolume:
+        guard let v = value, v >= 0.0, v <= 1.0 else {
+            throw OutputControllerError.volumeAdjustmentFailed
+        }
+        try OutputController.setSystemVolume(v)
+        return OutputControllerResult(value: v, message: "System volume set to \(v)")
+    case .getVolume:
+        let v = try OutputController.getSystemVolume()
+        return OutputControllerResult(value: v, message: "System volume is \(v)")
+    case .setBrightness:
+        guard let v = value, v >= 0.0, v <= 1.0 else {
+            throw OutputControllerError.brightnessAdjustmentFailed
+        }
+        try OutputController.setMainDisplayBrightness(v)
+        return OutputControllerResult(value: v, message: "Main display brightness set to \(v)")
+    case .getBrightness:
+        let v = try OutputController.getMainDisplayBrightness()
+        return OutputControllerResult(value: v, message: "Main display brightness is \(v)")
+    }
+} 

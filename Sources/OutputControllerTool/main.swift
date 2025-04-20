@@ -46,27 +46,30 @@ let action = arguments[1].lowercased()
 log("Action: \(action)")
 
 do {
+    let result: OutputControllerResult
     switch action {
     case "set-volume":
-        guard arguments.count == 3, let value = Float(arguments[2]), value >= 0.0, value <= 1.0 else {
+        guard arguments.count == 3, let value = Float(arguments[2]) else {
             throw OutputControllerError.volumeAdjustmentFailed
         }
-        try OutputController.setSystemVolume(value)
-        finish(success: true, message: "System volume set to \(value)")
+        result = try MacosUseSDK.outputControllerTool(action: .setVolume, value: value)
+        print(result.value ?? "")
+        finish(success: true, message: result.message)
     case "get-volume":
-        let value = try OutputController.getSystemVolume()
-        print(value)
-        finish(success: true, message: "System volume is \(value)")
+        result = try MacosUseSDK.outputControllerTool(action: .getVolume)
+        print(result.value ?? "")
+        finish(success: true, message: result.message)
     case "set-brightness":
-        guard arguments.count == 3, let value = Float(arguments[2]), value >= 0.0, value <= 1.0 else {
+        guard arguments.count == 3, let value = Float(arguments[2]) else {
             throw OutputControllerError.brightnessAdjustmentFailed
         }
-        try OutputController.setMainDisplayBrightness(value)
-        finish(success: true, message: "Main display brightness set to \(value)")
+        result = try MacosUseSDK.outputControllerTool(action: .setBrightness, value: value)
+        print(result.value ?? "")
+        finish(success: true, message: result.message)
     case "get-brightness":
-        let value = try OutputController.getMainDisplayBrightness()
-        print(value)
-        finish(success: true, message: "Main display brightness is \(value)")
+        result = try MacosUseSDK.outputControllerTool(action: .getBrightness)
+        print(result.value ?? "")
+        finish(success: true, message: result.message)
     default:
         fputs(usage, stderr)
         finish(success: false, message: "Unknown action '\(action)'")
