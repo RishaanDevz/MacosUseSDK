@@ -182,6 +182,7 @@ public struct OutputControllerResult: Codable {
     public let message: String
 }
 
+@MainActor
 public func outputControllerTool(
     action: OutputControllerAction,
     value: Float? = nil
