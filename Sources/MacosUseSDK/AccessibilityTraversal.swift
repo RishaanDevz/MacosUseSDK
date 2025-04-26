@@ -73,9 +73,13 @@ public struct BrowserElementData: Codable, Hashable, Sendable {
     public var tagName: String
     public var id: String?
     public var className: String?
-    public var text: String?
-    public var href: String?
-    public var src: String?
+    public var text: String? // Might represent innerText or similar
+    public var value: String? // For input elements, etc.
+    public var placeholder: String? // For input elements
+    public var ariaLabel: String? // Accessibility label
+    public var role: String? // Explicit ARIA role
+    public var href: String? // For links
+    public var src: String? // For images/iframes? (Consider adding iframe)
     public var x: Double?
     public var y: Double?
     public var width: Double?
@@ -87,6 +91,10 @@ public struct BrowserElementData: Codable, Hashable, Sendable {
         hasher.combine(id)
         hasher.combine(className)
         hasher.combine(text)
+        hasher.combine(value)
+        hasher.combine(placeholder)
+        hasher.combine(ariaLabel)
+        hasher.combine(role)
         hasher.combine(href)
         hasher.combine(src)
         hasher.combine(x)
@@ -100,6 +108,10 @@ public struct BrowserElementData: Codable, Hashable, Sendable {
         lhs.id == rhs.id &&
         lhs.className == rhs.className &&
         lhs.text == rhs.text &&
+        lhs.value == rhs.value &&
+        lhs.placeholder == rhs.placeholder &&
+        lhs.ariaLabel == rhs.ariaLabel &&
+        lhs.role == rhs.role &&
         lhs.href == rhs.href &&
         lhs.src == rhs.src &&
         lhs.x == rhs.x &&
@@ -277,118 +289,206 @@ fileprivate class AccessibilityTraversalOperation {
     // --- Browser Content Extraction ---
     
     func extractBrowserContent(app: NSRunningApplication, appElement: AXUIElement) throws {
-        // Get the browser's current URL and document
+        // Get the browser's current URL and title
         var browserURL = "unknown"
         var browserTitle = "unknown"
         var html = ""
         var extractedText = ""
         var browserElements: [BrowserElementData] = []
-        
-        // First, try to get the URL and title using accessibility API
+
+        // First, try to get the URL and title using accessibility API (existing logic)
         if let urlValue = getURLFromBrowser(appElement: appElement) {
             browserURL = urlValue
         }
-        
         if let titleValue = getTitleFromBrowser(appElement: appElement) {
             browserTitle = titleValue
         }
-        
-        // Use AppleScript to extract HTML content
+
+        // Use AppleScript to execute JavaScript for detailed extraction
+        // Enhanced JavaScript:
+        // - Uses innerText for potentially better visible text representation.
+        // - Selects a broader range of potentially interactive elements.
+        // - Extracts more attributes (value, placeholder, aria-label, role).
+        // - Includes basic error handling within JS.
         let script = """
         tell application "\(app.localizedName ?? "")"
-            set currentURL to URL of active tab of front window
-            set pageTitle to name of front window
-            set pageContent to execute front window's active tab javascript "
+            set currentURL to ""
+            set pageTitle to ""
+            set pageContentJson to ""
+            try
+                set currentURL to URL of active tab of front window
+            on error errMsg number errorNumber
+                -- Ignore error if URL cannot be obtained
+            end try
+            try
+                set pageTitle to name of front window
+            on error errMsg number errorNumber
+                 -- Ignore error if title cannot be obtained
+            end try
+
+            try
+                set pageContentJson to execute front window's active tab javascript "
                 (function() {
-                    // Extract full HTML
-                    var htmlContent = document.documentElement.outerHTML;
-                    
-                    // Extract visible text
-                    var textContent = Array.from(document.querySelectorAll('body, body *'))
-                        .filter(el => {
-                            var style = window.getComputedStyle(el);
-                            return style.display !== 'none' && 
-                                   style.visibility !== 'hidden' && 
-                                   style.opacity !== '0' &&
-                                   el.offsetWidth > 0 &&
-                                   el.offsetHeight > 0;
-                        })
-                        .map(el => el.textContent)
-                        .filter(text => text.trim().length > 0)
-                        .join('\\n');
-                    
-                    // Extract important elements with positions
-                    var elements = [];
-                    var interactiveElements = document.querySelectorAll('a, button, input, select, textarea, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab]');
-                    
-                    interactiveElements.forEach(function(el) {
-                        if (el.offsetWidth > 0 && el.offsetHeight > 0) {
-                            var rect = el.getBoundingClientRect();
-                            elements.push({
-                                tagName: el.tagName.toLowerCase(),
-                                id: el.id || null,
-                                className: el.className || null,
-                                text: el.textContent.trim() || null,
-                                href: el.href || null,
-                                src: el.src || null,
-                                x: rect.left,
-                                y: rect.top,
-                                width: rect.width,
-                                height: rect.height
-                            });
+                    try {
+                        // Extract full HTML
+                        var htmlContent = document.documentElement.outerHTML || '';
+
+                        // Extract visible text using innerText (might be better for 'rendered' text)
+                        // Fallback to textContent extraction if innerText isn't available or fails
+                        var textContent = '';
+                        try {
+                            textContent = document.body.innerText || '';
+                        } catch (e) {
+                             // Fallback: Extract text content more broadly if innerText fails
+                             textContent = Array.from(document.querySelectorAll('body, body *'))
+                                .filter(el => {
+                                    var style = window.getComputedStyle(el);
+                                    return style.display !== 'none' &&
+                                           style.visibility !== 'hidden' &&
+                                           style.opacity !== '0';
+                                })
+                                .map(el => el.textContent || '')
+                                .filter(text => text.trim().length > 0)
+                                .join('\\\\n'); // Escaped newline for JSON within AppleScript string
                         }
-                    });
-                    
-                    return JSON.stringify({
-                        html: htmlContent,
-                        text: textContent,
-                        elements: elements
-                    });
+
+                        // Extract interactive elements with positions and more attributes
+                        var elements = [];
+                        // Broader selector: includes common interactive elements, ARIA roles, and elements with click handlers
+                        var interactiveSelector = 'a, button, input, select, textarea, summary, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab], [role=option], [role=menuitem], [role=slider], [role=spinbutton], [role=switch], [onclick]';
+                        var interactiveElements = document.querySelectorAll(interactiveSelector);
+
+                        interactiveElements.forEach(function(el) {
+                            try {
+                                var style = window.getComputedStyle(el);
+                                var rect = el.getBoundingClientRect();
+
+                                // Check for visibility (non-zero size, not hidden)
+                                if (rect.width > 0 && rect.height > 0 &&
+                                    style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0')
+                                {
+                                    // Use innerText for the element's text if available and seems appropriate, else textContent
+                                    let elementText = (el.innerText !== undefined ? el.innerText : el.textContent || '').trim();
+                                    // For inputs, prefer value if text is empty
+                                    if (!elementText && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value) {
+                                        elementText = el.value.trim();
+                                    }
+                                    
+                                    elements.push({
+                                        tagName: el.tagName.toLowerCase(),
+                                        id: el.id || null,
+                                        className: el.className || null,
+                                        text: elementText || null, // Use refined text
+                                        value: el.value || null, // Added
+                                        placeholder: el.placeholder || null, // Added
+                                        ariaLabel: el.getAttribute('aria-label') || null, // Added
+                                        role: el.getAttribute('role') || null, // Added
+                                        href: el.href || null,
+                                        src: el.src || null,
+                                        x: rect.left,
+                                        y: rect.top,
+                                        width: rect.width,
+                                        height: rect.height
+                                    });
+                                }
+                            } catch (e) {
+                                console.error('Error processing element:', el, e);
+                            }
+                        });
+
+                        return JSON.stringify({
+                            html: htmlContent,
+                            text: textContent.trim(),
+                            elements: elements
+                        });
+                    } catch (e) {
+                        // Return error details if the main JS block fails
+                        return JSON.stringify({ error: 'JavaScript execution failed: ' + e.message });
+                    }
                 })();
-            "
-            return pageContent
+                "
+            on error errMsg number errorNumber
+                 throw "AppleScript JavaScript execution failed: " & errMsg & " (" & errorNumber & ")"
+            end try
+            return pageContentJson
         end tell
         """
-        
+
         do {
             let appleScriptResult = try runAppleScript(script)
             if let data = appleScriptResult.data(using: .utf8) {
-                if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    html = json["html"] as? String ?? ""
-                    extractedText = json["text"] as? String ?? ""
-                    
-                    // Process browser elements
-                    if let elements = json["elements"] as? [[String: Any]] {
-                        for element in elements {
-                            let browserElement = BrowserElementData(
-                                tagName: element["tagName"] as? String ?? "unknown",
-                                id: element["id"] as? String,
-                                className: element["className"] as? String,
-                                text: element["text"] as? String,
-                                href: element["href"] as? String,
-                                src: element["src"] as? String,
-                                x: element["x"] as? Double,
-                                y: element["y"] as? Double,
-                                width: element["width"] as? Double,
-                                height: element["height"] as? Double
-                            )
-                            browserElements.append(browserElement)
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        // Check for JS errors first
+                        if let jsError = json["error"] as? String {
+                            fputs("warning: javascript error during browser content extraction: \(jsError)\n", stderr)
+                             // Optionally, decide if this should be a thrown error
+                            // throw MacosUseSDKError.browserScriptError("JavaScript Error: \(jsError)")
+                        } else {
+                            html = json["html"] as? String ?? ""
+                            extractedText = json["text"] as? String ?? ""
+
+                            // Process browser elements
+                            if let elements = json["elements"] as? [[String: Any]] {
+                                for element in elements {
+                                    let browserElement = BrowserElementData(
+                                        tagName: element["tagName"] as? String ?? "unknown",
+                                        id: element["id"] as? String,
+                                        className: element["className"] as? String,
+                                        text: element["text"] as? String,
+                                        value: element["value"] as? String,          // Added
+                                        placeholder: element["placeholder"] as? String, // Added
+                                        ariaLabel: element["ariaLabel"] as? String,   // Added
+                                        role: element["role"] as? String,            // Added
+                                        href: element["href"] as? String,
+                                        src: element["src"] as? String,
+                                        x: element["x"] as? Double,
+                                        y: element["y"] as? Double,
+                                        width: element["width"] as? Double,
+                                        height: element["height"] as? Double
+                                    )
+                                    browserElements.append(browserElement)
+                                }
+                                statistics.browser_elements_count = browserElements.count
+                                fputs("info: extracted \(browserElements.count) browser elements via javascript.\n", stderr)
+                            } else {
+                                fputs("warning: could not parse 'elements' array from javascript result.\n", stderr)
+                            }
                         }
-                        statistics.browser_elements_count = browserElements.count
+                    } else {
+                         fputs("warning: failed to deserialize json from applescript result.\n", stderr)
                     }
+                } catch let jsonError {
+                    fputs("warning: failed to parse json from applescript: \(jsonError.localizedDescription)\nstring was: \(appleScriptResult)\n", stderr)
                 }
+            } else {
+                fputs("warning: could not convert applescript result to data.\n", stderr)
             }
+        } catch let scriptError as MacosUseSDKError {
+             // Forward browser script errors
+             fputs("warning: failed to extract browser content using applescript: \(scriptError.localizedDescription)\n", stderr)
+             // Decide if this should be fatal or just logged
+             // throw scriptError // Uncomment to make script failure fatal
         } catch {
-            fputs("warning: failed to extract HTML using AppleScript: \(error.localizedDescription)\n", stderr)
+            // Catch other potential errors from runAppleScript
+            fputs("warning: an unexpected error occurred running applescript for browser content: \(error.localizedDescription)\n", stderr)
         }
-        
-        // Create browser data
+
+        // Use AX API values as fallbacks if AppleScript failed to get them
+        if let titleFromAX = getTitleFromBrowser(appElement: appElement), browserTitle == "unknown" {
+            browserTitle = titleFromAX
+        }
+         if let urlFromAX = getURLFromBrowser(appElement: appElement), browserURL == "unknown" {
+            browserURL = urlFromAX
+        }
+
+        // Create browser data (even if extraction partially failed)
         browserData = BrowserPageData(
             url: browserURL,
             title: browserTitle,
-            html: html,
-            extractedText: extractedText,
-            elements: browserElements
+            html: html, // Might be empty if JS failed
+            extractedText: extractedText, // Might be empty
+            elements: browserElements // Might be empty
         )
     }
     
@@ -463,12 +563,14 @@ fileprivate class AccessibilityTraversalOperation {
         let appleScript = NSAppleScript(source: script)
         var error: NSDictionary?
         guard let result = appleScript?.executeAndReturnError(&error) else {
-            if let error = error {
-                throw MacosUseSDKError.browserScriptError(error.description)
+            if let errorDict = error {
+                let message = errorDict[NSAppleScript.errorMessage] as? String ?? "Unknown AppleScript Error"
+                let errorNum = errorDict[NSAppleScript.errorNumber] as? Int ?? -1
+                throw MacosUseSDKError.browserScriptError("AppleScript Error (\(errorNum)): \(message)")
             }
-            throw MacosUseSDKError.browserScriptError("Unknown AppleScript error")
+            throw MacosUseSDKError.browserScriptError("Unknown AppleScript execution error")
         }
-        return result.stringValue ?? ""
+        return result.stringValue ?? "" // Ensure returning non-nil string
     }
 
     // --- Helper Functions (now methods of the class) ---
