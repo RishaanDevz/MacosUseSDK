@@ -85,6 +85,162 @@ public struct BrowserElementData: Codable, Hashable, Sendable {
     public var width: Double?
     public var height: Double?
     
+    // Add a memberwise initializer
+    public init(
+        tagName: String,
+        id: String? = nil,
+        className: String? = nil,
+        text: String? = nil,
+        value: String? = nil,
+        placeholder: String? = nil,
+        ariaLabel: String? = nil,
+        role: String? = nil,
+        href: String? = nil,
+        src: String? = nil,
+        x: Double? = nil,
+        y: Double? = nil,
+        width: Double? = nil,
+        height: Double? = nil
+    ) {
+        self.tagName = tagName
+        self.id = id
+        self.className = className
+        self.text = text
+        self.value = value
+        self.placeholder = placeholder
+        self.ariaLabel = ariaLabel
+        self.role = role
+        self.href = href
+        self.src = src
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+    
+    // New property for formatted HTML-like representation
+    public var stringRepresentation: String {
+        var attributes = [String]()
+        
+        if let id = id, !id.isEmpty {
+            attributes.append("id=\"\(id)\"")
+        }
+        
+        if let className = className, !className.isEmpty {
+            attributes.append("class=\"\(className)\"")
+        }
+        
+        if let value = value, !value.isEmpty {
+            attributes.append("value=\"\(value)\"")
+        }
+        
+        if let placeholder = placeholder, !placeholder.isEmpty {
+            attributes.append("placeholder=\"\(placeholder)\"")
+        }
+        
+        if let ariaLabel = ariaLabel, !ariaLabel.isEmpty {
+            attributes.append("aria-label=\"\(ariaLabel)\"")
+        }
+        
+        if let role = role, !role.isEmpty {
+            attributes.append("role=\"\(role)\"")
+        }
+        
+        if let href = href, !href.isEmpty {
+            attributes.append("href=\"\(href)\"")
+        }
+        
+        if let src = src, !src.isEmpty {
+            attributes.append("src=\"\(src)\"")
+        }
+        
+        // Add position and size if available
+        if let x = x, let y = y {
+            attributes.append("position=\"\(x),\(y)\"")
+        }
+        
+        if let width = width, let height = height {
+            attributes.append("size=\"\(width)x\(height)\"")
+        }
+        
+        let attributesStr = attributes.isEmpty ? "" : " " + attributes.joined(separator: " ")
+        
+        // Format differently based on element type
+        switch tagName.lowercased() {
+        case "input":
+            let type = className?.contains("password") == true ? "password" : "text"
+            if let placeholderText = placeholder, !placeholderText.isEmpty {
+                return "<input type=\"\(type)\" placeholder=\"\(placeholderText)\"\(attributesStr)>"
+            } else {
+                return "<input type=\"\(type)\"\(attributesStr)>"
+            }
+        case "button":
+            return "<button\(attributesStr)>\(text ?? "")</button>"
+        case "a":
+            return "<a\(attributesStr)>\(text ?? "")</a>"
+        case "img":
+            return "<img\(attributesStr)>"
+        case "div", "span":
+            // Check if this div/span functions as a button
+            if role == "button" || className?.lowercased().contains("button") == true || className?.lowercased().contains("btn") == true {
+                return "<button\(attributesStr)>\(text ?? "")</button>"
+            } else if let t = text, !t.isEmpty {
+                return "<\(tagName)\(attributesStr)>\(t)</\(tagName)>"
+            } else {
+                return "<\(tagName)\(attributesStr)>"
+            }
+        default:
+            if let t = text, !t.isEmpty {
+                return "<\(tagName)\(attributesStr)>\(t)</\(tagName)>"
+            } else {
+                return "<\(tagName)\(attributesStr)>"
+            }
+        }
+    }
+    
+    // Implement Codable to include the computed property
+    private enum CodingKeys: String, CodingKey {
+        case tagName, id, className, text, value, placeholder, ariaLabel, role, href, src, x, y, width, height, stringRepresentation
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(tagName, forKey: .tagName)
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encodeIfPresent(className, forKey: .className)
+        try container.encodeIfPresent(text, forKey: .text)
+        try container.encodeIfPresent(value, forKey: .value)
+        try container.encodeIfPresent(placeholder, forKey: .placeholder)
+        try container.encodeIfPresent(ariaLabel, forKey: .ariaLabel)
+        try container.encodeIfPresent(role, forKey: .role)
+        try container.encodeIfPresent(href, forKey: .href)
+        try container.encodeIfPresent(src, forKey: .src)
+        try container.encodeIfPresent(x, forKey: .x)
+        try container.encodeIfPresent(y, forKey: .y)
+        try container.encodeIfPresent(width, forKey: .width)
+        try container.encodeIfPresent(height, forKey: .height)
+        try container.encode(stringRepresentation, forKey: .stringRepresentation)
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        tagName = try container.decode(String.self, forKey: .tagName)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        className = try container.decodeIfPresent(String.self, forKey: .className)
+        text = try container.decodeIfPresent(String.self, forKey: .text)
+        value = try container.decodeIfPresent(String.self, forKey: .value)
+        placeholder = try container.decodeIfPresent(String.self, forKey: .placeholder)
+        ariaLabel = try container.decodeIfPresent(String.self, forKey: .ariaLabel)
+        role = try container.decodeIfPresent(String.self, forKey: .role)
+        href = try container.decodeIfPresent(String.self, forKey: .href)
+        src = try container.decodeIfPresent(String.self, forKey: .src)
+        x = try container.decodeIfPresent(Double.self, forKey: .x)
+        y = try container.decodeIfPresent(Double.self, forKey: .y)
+        width = try container.decodeIfPresent(Double.self, forKey: .width)
+        height = try container.decodeIfPresent(Double.self, forKey: .height)
+        // No need to decode stringRepresentation as it's computed
+    }
+    
     // Implement Hashable for use in Set
     public func hash(into hasher: inout Hasher) {
         hasher.combine(tagName)
@@ -327,7 +483,7 @@ fileprivate class AccessibilityTraversalOperation {
             end try
 
             try
-                set pageContentJson to execute front window's active tab javascript "
+                set pageContentScript to "
                 (function() {
                     try {
                         // Extract full HTML
@@ -349,15 +505,61 @@ fileprivate class AccessibilityTraversalOperation {
                                 })
                                 .map(el => el.textContent || '')
                                 .filter(text => text.trim().length > 0)
-                                .join('\\\\n'); // Escaped newline for JSON within AppleScript string
+                                .join('\\n');
                         }
 
                         // Extract interactive elements with positions and more attributes
                         var elements = [];
-                        // Broader selector: includes common interactive elements, ARIA roles, and elements with click handlers
-                        var interactiveSelector = 'a, button, input, select, textarea, summary, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab], [role=option], [role=menuitem], [role=slider], [role=spinbutton], [role=switch], [onclick]';
-                        var interactiveElements = document.querySelectorAll(interactiveSelector);
-
+                        
+                        // Use widely supported selectors
+                        var basicSelectors = [
+                            // General button selectors
+                            'button', '[role=button]',
+                            
+                            // Text inputs and common UI elements
+                            'input[type=text]', 'textarea', '[contenteditable=true]',
+                            
+                            // Link elements
+                            'a', '[role=link]',
+                            
+                            // General clickable elements
+                            '[onclick]', '[class*=clickable]',
+                            
+                            // Social media specific (like Twitter/X post button)
+                            'div[data-testid*=Post]', 'div[data-testid*=Tweet]', 'div[aria-label*=Post]', 'div[aria-label*=Tweet]',
+                            
+                            // Find elements that likely function as buttons
+                            'div[class*=button]', 'div[class*=btn]', 'span[class*=button]', 'span[class*=btn]'
+                        ];
+                        
+                        // Combine basic selectors
+                        var interactiveSelector = basicSelectors.join(', ');
+                        var interactiveElements = Array.from(document.querySelectorAll(interactiveSelector));
+                        
+                        // Additional post-processing to find other elements with text content related to posting/tweeting
+                        // This replaces the :contains() and :has() pseudo-selectors
+                        var textBasedElements = Array.from(document.querySelectorAll('div, span')).filter(function(el) {
+                            // Skip elements already selected
+                            if (interactiveElements.includes(el)) return false;
+                            
+                            // Check if element has text content like 'Post', 'Tweet', etc.
+                            var text = (el.textContent || '').trim().toLowerCase();
+                            var hasPostKeyword = text === 'post' || text === 'tweet' || text === 'send' || 
+                                                text.includes('post ') || text.includes(' post') ||
+                                                text.includes('tweet ') || text.includes(' tweet') ||
+                                                text.includes('send ') || text.includes(' send');
+                            
+                            // Only select leaf nodes (no children) or very simple containers with just text
+                            var isSimpleElement = el.children.length === 0 || 
+                                                 (el.children.length === 1 && el.children[0].tagName === 'SPAN');
+                            
+                            return hasPostKeyword && isSimpleElement;
+                        });
+                        
+                        // Combine all elements
+                        interactiveElements = interactiveElements.concat(textBasedElements);
+                        
+                        // Process all the elements
                         interactiveElements.forEach(function(el) {
                             try {
                                 var style = window.getComputedStyle(el);
@@ -368,21 +570,42 @@ fileprivate class AccessibilityTraversalOperation {
                                     style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0')
                                 {
                                     // Use innerText for the element's text if available and seems appropriate, else textContent
-                                    let elementText = (el.innerText !== undefined ? el.innerText : el.textContent || '').trim();
-                                    // For inputs, prefer value if text is empty
-                                    if (!elementText && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value) {
-                                        elementText = el.value.trim();
+                                    let elementText = '';
+                                    
+                                    // For buttons and links, try to get the most visible text
+                                    if (el.tagName === 'BUTTON' || el.tagName === 'A' || 
+                                        el.getAttribute('role') === 'button' || el.getAttribute('role') === 'link') {
+                                        elementText = el.innerText || el.textContent || '';
+                                    } 
+                                    // For inputs, prefer displayed value or placeholder
+                                    else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                                        elementText = el.value || el.placeholder || '';
+                                    }
+                                    // Try other sources if still empty
+                                    if (!elementText.trim()) {
+                                        elementText = el.getAttribute('aria-label') || 
+                                                    el.getAttribute('title') || 
+                                                    el.alt || 
+                                                    '';
+                                    }
+                                    
+                                    // If the element contains an image with alt text, use that
+                                    if (!elementText.trim()) {
+                                        const img = el.querySelector('img[alt]');
+                                        if (img && img.alt) {
+                                            elementText = img.alt;
+                                        }
                                     }
                                     
                                     elements.push({
                                         tagName: el.tagName.toLowerCase(),
                                         id: el.id || null,
                                         className: el.className || null,
-                                        text: elementText || null, // Use refined text
-                                        value: el.value || null, // Added
-                                        placeholder: el.placeholder || null, // Added
-                                        ariaLabel: el.getAttribute('aria-label') || null, // Added
-                                        role: el.getAttribute('role') || null, // Added
+                                        text: elementText.trim() || null,
+                                        value: el.value || null,
+                                        placeholder: el.placeholder || null,
+                                        ariaLabel: el.getAttribute('aria-label') || null,
+                                        role: el.getAttribute('role') || null,
                                         href: el.href || null,
                                         src: el.src || null,
                                         x: rect.left,
@@ -407,8 +630,10 @@ fileprivate class AccessibilityTraversalOperation {
                     }
                 })();
                 "
+                
+                set pageContentJson to execute front window's active tab javascript pageContentScript
             on error errMsg number errorNumber
-                 throw "AppleScript JavaScript execution failed: " & errMsg & " (" & errorNumber & ")"
+                throw "AppleScript JavaScript execution failed: " & errMsg & " (" & errorNumber & ")"
             end try
             return pageContentJson
         end tell
@@ -482,6 +707,17 @@ fileprivate class AccessibilityTraversalOperation {
             browserURL = urlFromAX
         }
 
+        // After creating browserElements array and before setting browserData, log the formatted elements
+        if !browserElements.isEmpty {
+            fputs("info: extracted browser elements with HTML-like formatting:\n", stderr)
+            for (index, element) in browserElements.prefix(5).enumerated() {
+                fputs("  \(index + 1). \(element.stringRepresentation)\n", stderr)
+            }
+            if browserElements.count > 5 {
+                fputs("  ... and \(browserElements.count - 5) more elements\n", stderr)
+            }
+        }
+        
         // Create browser data (even if extraction partially failed)
         browserData = BrowserPageData(
             url: browserURL,
