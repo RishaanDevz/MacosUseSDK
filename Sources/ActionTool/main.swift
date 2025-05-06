@@ -153,3 +153,19 @@ struct ActionTool {
         fflush(stdout)
     }
 }
+
+/*
+# Example: File Search Tool Usage
+
+# Search for PDF files with "report" in the name
+swift run FileSearchTool --name report --type public.pdf
+
+# Search for image files modified in the last year
+swift run FileSearchTool --type public.image --start-date 2023-01-01
+
+# Search in multiple locations with a maximum of 50 results
+swift run FileSearchTool document --location ~/Documents --location ~/Downloads --max 50
+
+# Search for Excel files created in a specific date range  
+swift run FileSearchTool --type com.microsoft.excel.xls --start-date 2023-01-01 --end-date 2023-12-31
+*/

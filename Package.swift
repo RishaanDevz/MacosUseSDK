@@ -34,6 +34,9 @@ let package = Package(
         .executable(
             name: "OutputControllerTool",
             targets: ["OutputControllerTool"]),
+        .executable(
+            name: "FileSearchTool",
+            targets: ["FileSearchTool"]),
     ],
     dependencies: [
         // Add any external package dependencies here later if needed
@@ -77,6 +80,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "OutputControllerTool",
+            dependencies: ["MacosUseSDK"]
+        ),
+        .executableTarget(
+            name: "FileSearchTool",
             dependencies: ["MacosUseSDK"]
         ),
         .testTarget(
