@@ -1,0 +1,13 @@
+README.md
+setup.py
+macos_use_sdk/__init__.py
+macos_use_sdk/cli.py
+macos_use_sdk/core.py
+macos_use_sdk/py.typed
+macos_use_sdk/types.py
+macos_use_sdk.egg-info/PKG-INFO
+macos_use_sdk.egg-info/SOURCES.txt
+macos_use_sdk.egg-info/dependency_links.txt
+macos_use_sdk.egg-info/entry_points.txt
+macos_use_sdk.egg-info/requires.txt
+macos_use_sdk.egg-info/top_level.txt

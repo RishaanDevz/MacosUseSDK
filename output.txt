@@ -1,0 +1,75 @@
+{"type":"permissionCheck","timestamp":"2025-07-19T17:43:12Z","message":"Accessibility permissions already granted."}
+{"message":"Starting usage monitoring. Press Ctrl+C to stop.","type":"startup","app":{"name":"Terminal","bundleId":"com.apple.Terminal"},"timestamp":"2025-07-19T17:43:12Z"}
+{"type":"monitoring","timestamp":"2025-07-19T17:43:12Z","message":"Setting up CG event taps..."}
+{"type":"monitoring","timestamp":"2025-07-19T17:43:12Z","message":"CG event taps set up. Monitoring started..."}
+{"message":"Starting run loop...","type":"startup","app":{"name":"Terminal","bundleId":"com.apple.Terminal"},"timestamp":"2025-07-19T17:43:12Z"}
+{"position":{"x":731.11328125,"y":999.05078125},"timestamp":"2025-07-19T17:43:13Z","type":"leftMouseDown","element":{"role":"AXDockItem","title":"Google Chrome","parentRole":"AXList"},"app":{"name":"Terminal","bundleId":"com.apple.Terminal"}}
+{"app":{"name":"Google Chrome","bundleId":"com.google.Chrome"},"type":"appFocused","timestamp":"2025-07-19T17:43:13Z","application":{"name":"Google Chrome","bundleId":"com.google.Chrome","processId":746}}
+{"timestamp":"2025-07-19T17:43:13Z","type":"appDefocused","application":{"bundleId":"com.apple.Terminal","processId":766,"name":"Terminal"}}
+{"element":{"placeholder":"Search Google or type a URL","title":"","role":"AXTextField","value":"reddit.com","parentRole":"AXGroup"},"timestamp":"2025-07-19T17:43:14Z","type":"keyDown","key":"\r"}
+{"element":{"role":"AXGroup","parentRole":"AXWebArea","title":""},"type":"scrollWheel","delta":{"dy":-1,"dx":0},"timestamp":"2025-07-19T17:43:17Z","position":{"x":360.51171875,"y":394.59375}}
+{"type":"scrollWheel","position":{"x":360.51171875,"y":394.59375},"element":{"role":"AXGroup","title":"","parentRole":"AXWebArea"},"delta":{"dx":0,"dy":-1},"timestamp":"2025-07-19T17:43:17Z"}
+{"element":{"role":"AXGroup","title":"","parentRole":"AXWebArea"},"type":"leftMouseDown","timestamp":"2025-07-19T17:43:19Z","app":{"bundleId":"com.google.Chrome","name":"Google Chrome"},"position":{"x":828.22265625,"y":131.6953125}}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:20Z","key":"n","element":{"value":"r\/si","title":"Clear search","parentRole":"AXGroup","role":"AXTextField"}}
+{"key":"g","type":"keyDown","timestamp":"2025-07-19T17:43:20Z","element":{"value":"r\/sin","role":"AXTextField","title":"Clear search","parentRole":"AXGroup"}}
+{"key":"u","element":{"value":"r\/sing","parentRole":"AXGroup","role":"AXTextField","title":"Clear search"},"timestamp":"2025-07-19T17:43:20Z","type":"keyDown"}
+{"timestamp":"2025-07-19T17:43:21Z","key":"l","type":"keyDown","element":{"role":"AXTextField","title":"Clear search","value":"r\/singu","parentRole":"AXGroup"}}
+{"timestamp":"2025-07-19T17:43:21Z","key":"a","type":"keyDown","element":{"role":"AXTextField","title":"Clear search","value":"r\/singul","parentRole":"AXGroup"}}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:21Z","key":"t","element":{"parentRole":"AXGroup","role":"AXTextField","title":"Clear search","value":"r\/singula"}}
+{"element":{"role":"AXTextField","parentRole":"AXGroup","value":"r\/singulat","title":"Clear search"},"type":"keyDown","key":"i","timestamp":"2025-07-19T17:43:21Z"}
+{"element":{"parentRole":"AXGroup","role":"AXTextField","title":"Clear search","value":"r\/singulati"},"key":"r","type":"keyDown","timestamp":"2025-07-19T17:43:21Z"}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:21Z","key":"\b","element":{"value":"r\/singulatir","title":"Clear search","parentRole":"AXGroup","role":"AXTextField"}}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:21Z","key":"\b","element":{"parentRole":"AXGroup","role":"AXTextField","title":"Clear search","value":"r\/singulati"}}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:22Z","element":{"role":"AXTextField","parentRole":"AXGroup","value":"r\/singulat","title":"Clear search"},"key":"\b"}
+{"element":{"role":"AXTextField","parentRole":"AXGroup","value":"r\/singulat","title":"Clear search"},"type":"keyDown","key":"r","timestamp":"2025-07-19T17:43:22Z"}
+{"element":{"parentRole":"AXGroup","role":"AXTextField","title":"Clear search","value":"r\/singular"},"key":"i","type":"keyDown","timestamp":"2025-07-19T17:43:22Z"}
+{"key":"t","element":{"value":"r\/singulari","parentRole":"AXGroup","role":"AXTextField","title":"Clear search"},"timestamp":"2025-07-19T17:43:22Z","type":"keyDown"}
+{"key":"y","element":{"value":"r\/singularit","parentRole":"AXGroup","role":"AXTextField","title":"Clear search"},"timestamp":"2025-07-19T17:43:22Z","type":"keyDown"}
+{"position":{"x":774.0078125,"y":386.50390625},"element":{"role":"AXGroup","parentRole":"AXGroup","title":""},"timestamp":"2025-07-19T17:43:23Z","type":"leftMouseDown","app":{"name":"Google Chrome","bundleId":"com.google.Chrome"}}
+{"type":"scrollWheel","position":{"x":1147.63671875,"y":286.34765625},"timestamp":"2025-07-19T17:43:25Z","delta":{"dx":0,"dy":-1},"element":{"title":"","parentRole":"AXGroup","role":"AXGroup"}}
+{"type":"scrollWheel","position":{"x":1147.40625,"y":286.33984375},"element":{"role":"AXGroup","title":"","parentRole":"AXGroup"},"delta":{"dx":0,"dy":-1},"timestamp":"2025-07-19T17:43:26Z"}
+{"element":{"role":"AXWebArea","parentRole":"AXScrollArea","title":"Singularity"},"timestamp":"2025-07-19T17:43:27Z","key":"t","type":"keyDown"}
+{"element":{"title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"w"}
+{"element":{"value":"web.whatsapp.com","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"e"}
+{"element":{"value":"web.whatsapp.com","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"a"}
+{"element":{"value":"weather","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"t"}
+{"element":{"value":"weather","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"h"}
+{"key":"e","element":{"value":"weather","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","title":""},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown"}
+{"timestamp":"2025-07-19T17:43:28Z","key":"r","type":"keyDown","element":{"role":"AXTextField","title":"","value":"weather","placeholder":"Search Google or type a URL","parentRole":"AXGroup"}}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:28Z","key":" ","element":{"value":"weather","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"}}
+{"element":{"value":"weather ","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:28Z","type":"keyDown","key":"i"}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:28Z","key":"n","element":{"value":"weather in toronto","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"}}
+{"key":" ","element":{"placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","title":"","value":"weather in toronto"},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown"}
+{"key":"t","element":{"value":"weather in toronto","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","title":""},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown"}
+{"element":{"role":"AXTextField","title":"","value":"weather in toronto","placeholder":"Search Google or type a URL","parentRole":"AXGroup"},"key":"o","type":"keyDown","timestamp":"2025-07-19T17:43:29Z"}
+{"element":{"value":"weather in toronto","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown","key":"r"}
+{"element":{"value":"weather in toronto","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown","key":"o"}
+{"element":{"value":"weather in toronto","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown","key":"n"}
+{"element":{"value":"weather in toronto","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:29Z","type":"keyDown","key":"t"}
+{"element":{"role":"AXTextField","placeholder":"Search Google or type a URL","parentRole":"AXGroup","value":"weather in toronto","title":""},"type":"keyDown","key":"o","timestamp":"2025-07-19T17:43:29Z"}
+{"element":{"role":"AXTextField","title":"","parentRole":"AXGroup","value":"weather in toronto","placeholder":"Search Google or type a URL"},"key":"\r","type":"keyDown","timestamp":"2025-07-19T17:43:29Z"}
+{"type":"scrollWheel","delta":{"dy":-1,"dx":0},"element":{"parentRole":"AXGroup","role":"AXGroup","title":""},"position":{"x":1079.015625,"y":271.15234375},"timestamp":"2025-07-19T17:43:30Z"}
+{"element":{"role":"AXGroup","title":"","parentRole":"AXGroup"},"delta":{"dx":0,"dy":-1},"type":"scrollWheel","timestamp":"2025-07-19T17:43:31Z","position":{"x":1079.6953125,"y":270.921875}}
+{"element":{"role":"AXGroup","title":"","parentRole":"AXGroup"},"type":"scrollWheel","delta":{"dy":1,"dx":0},"timestamp":"2025-07-19T17:43:32Z","position":{"x":1040.3828125,"y":291.62890625}}
+{"element":{"role":"AXWebArea","title":"weather in toronto - Google Search","parentRole":"AXScrollArea"},"type":"keyDown","key":"w","timestamp":"2025-07-19T17:43:32Z"}
+{"type":"keyDown","timestamp":"2025-07-19T17:43:33Z","key":"t","element":{"role":"AXWebArea","title":"Singularity","parentRole":"AXScrollArea"}}
+{"key":"r","type":"keyDown","timestamp":"2025-07-19T17:43:33Z","element":{"role":"AXTextField","placeholder":"Search Google or type a URL","title":"","parentRole":"AXGroup"}}
+{"element":{"role":"AXTextField","placeholder":"Search Google or type a URL","parentRole":"AXGroup","value":"reddit.com","title":""},"key":"i","type":"keyDown","timestamp":"2025-07-19T17:43:33Z"}
+{"key":"b","element":{"placeholder":"Search Google or type a URL","title":"","role":"AXTextField","value":"riveo.app","parentRole":"AXGroup"},"type":"keyDown","timestamp":"2025-07-19T17:43:34Z"}
+{"element":{"placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","value":"ribfest","title":""},"key":"f","type":"keyDown","timestamp":"2025-07-19T17:43:34Z"}
+{"key":"e","element":{"value":"ribfest","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"type":"keyDown","timestamp":"2025-07-19T17:43:34Z"}
+{"element":{"value":"ribfest","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField"},"timestamp":"2025-07-19T17:43:34Z","type":"keyDown","key":"s"}
+{"key":"t","type":"keyDown","element":{"role":"AXTextField","value":"ribfest","title":"","placeholder":"Search Google or type a URL","parentRole":"AXGroup"},"timestamp":"2025-07-19T17:43:34Z"}
+{"timestamp":"2025-07-19T17:43:34Z","key":" ","type":"keyDown","element":{"role":"AXTextField","title":"","value":"ribfest","placeholder":"Search Google or type a URL","parentRole":"AXGroup"}}
+{"key":"\u001f","element":{"value":"ribfest ","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","title":""},"timestamp":"2025-07-19T17:43:35Z","type":"keyDown"}
+{"key":"\r","element":{"value":"ribfest kitchener search suggestion, 2 of 9","placeholder":"Search Google or type a URL","parentRole":"AXGroup","role":"AXTextField","title":""},"timestamp":"2025-07-19T17:43:36Z","type":"keyDown"}
+{"element":{"title":"","role":"AXStaticText","value":"Kitchener Ribfest & Craft Beer Show","parentRole":"AXHeading"},"timestamp":"2025-07-19T17:43:37Z","type":"leftMouseDown","app":{"name":"Google Chrome","bundleId":"com.google.Chrome"},"position":{"y":344.12109375,"x":368.44140625}}
+{"delta":{"dx":0,"dy":-1},"type":"scrollWheel","position":{"y":419.8203125,"x":1079.484375},"element":{"role":"AXScrollArea","parentRole":"AXGroup"},"timestamp":"2025-07-19T17:43:38Z"}
+{"position":{"x":1040.2734375,"y":540.69921875},"element":{"parentRole":"AXHeading","role":"AXStaticText","title":"","value":"Kitchener Ribfest & Craft Beer Show  "},"timestamp":"2025-07-19T17:43:38Z","delta":{"dy":-1,"dx":0},"type":"scrollWheel"}
+{"type":"scrollWheel","position":{"x":1039.3515625,"y":547.49609375},"element":{"parentRole":"AXHeading","role":"AXStaticText","title":"","value":"Kitchener Ribfest & Craft Beer Show  "},"delta":{"dx":0,"dy":-1},"timestamp":"2025-07-19T17:43:39Z"}
+{"type":"scrollWheel","delta":{"dx":0,"dy":-1},"element":{"role":"AXImage","title":"","parentRole":"AXGroup"},"position":{"y":592.1875,"x":1036.5859375},"timestamp":"2025-07-19T17:43:39Z"}
+{"element":{"title":"Terminal","role":"AXDockItem","parentRole":"AXList"},"type":"leftMouseDown","timestamp":"2025-07-19T17:43:40Z","position":{"x":869.49609375,"y":1054.55078125},"app":{"bundleId":"com.google.Chrome","name":"Google Chrome"}}
+{"type":"appFocused","timestamp":"2025-07-19T17:43:40Z","app":{"bundleId":"com.apple.Terminal","name":"Terminal"},"application":{"name":"Terminal","bundleId":"com.apple.Terminal","processId":766}}
+{"type":"appDefocused","application":{"name":"Google Chrome","processId":746,"bundleId":"com.google.Chrome"},"timestamp":"2025-07-19T17:43:40Z"}
+{"element":{"role":"AXTextArea","parentRole":"AXScrollArea","value":"(base) rishaan@Rishaans-Mac-mini MacosUseSDK % cle..."},"key":"\u0003","type":"keyDown","timestamp":"2025-07-19T17:43:41Z"}
+{"type":"shutdown","timestamp":"2025-07-19T17:43:41Z","reason":"Received SIGINT"}

@@ -37,6 +37,9 @@ let package = Package(
         .executable(
             name: "FileSearchTool",
             targets: ["FileSearchTool"]),
+        .executable(
+            name: "UsageMonitorTool",
+            targets: ["UsageMonitorTool"]),
     ],
     dependencies: [
         // Add any external package dependencies here later if needed
@@ -50,6 +53,10 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("ApplicationServices"),
+                .linkedFramework("IOKit"),
+                .linkedFramework("Carbon"),
+                .linkedFramework("CoreGraphics"),
+                .linkedFramework("ScreenCaptureKit"),
             ]
         ),
         .executableTarget(
@@ -84,6 +91,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "FileSearchTool",
+            dependencies: ["MacosUseSDK"]
+        ),
+        .executableTarget(
+            name: "UsageMonitorTool",
             dependencies: ["MacosUseSDK"]
         ),
         .testTarget(

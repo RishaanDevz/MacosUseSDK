@@ -1,0 +1,2 @@
+[console_scripts]
+macos-use-sdk = macos_use_sdk.cli:cli_main
