@@ -1,42 +1,48 @@
-# MacOS Smart Usage Monitor Tool
+# MacOS Usage Monitor Tool
 
-An intelligent real-time activity monitoring tool for macOS that captures meaningful user interactions with UI content extraction and automatic screenshots. Designed specifically for LLM integration and automation training.
+A comprehensive real-time activity monitoring tool for macOS that tracks all user interactions including mouse movements, keyboard input, application events, file system changes, network activity, and system metrics.
 
-## 🎯 Smart Features
+## Features
 
-### 📱 UI Content Capture
-- **Automatic screenshots** on user interactions
-- **Text extraction** from active windows and UI elements
-- **Element identification** - knows what you clicked on
-- **App context tracking** - understands which app and window you're using
-- **Periodic UI snapshots** - captures content every 30 seconds
+The UsageMonitorTool tracks the following activities in real-time:
 
-### 🖱️ Meaningful Mouse Events
-- **Click capture with context** - screenshots and UI content when you click
-- **Smart scroll detection** - only logs significant scrolling actions
-- **Reduced noise** - no constant mouse movement spam
+### 🖱️ Mouse Events
+- **Mouse movements** (with position coordinates)
+- **Mouse clicks** (left, right, middle button)
+- **Scroll wheel events** (with delta values)
+- **Drag operations**
+- **Click pressure** (for supported devices)
+- **Modifier keys** during mouse events
 
-### ⌨️ Intelligent Keyboard Monitoring
-- **Text accumulation** - batches typed content into meaningful chunks
-- **Smart logging** - captures text every 50 characters or 10 seconds
-- **Context awareness** - knows which app you're typing in
+### ⌨️ Keyboard Events
+- **Key presses and releases** (with key codes)
+- **Character input** (when available)
+- **Modifier key changes** (Shift, Control, Option, Command, etc.)
+- **Key repeat detection**
 
-### 🖥️ Application Context
-- **App switching detection** - captures UI when you change applications
-- **Window title tracking** - knows what document/page you're viewing
-- **Bundle identification** - tracks specific applications
+### 🖥️ Application Events
+- **App launches and terminations**
+- **App activation/deactivation** (focus changes)
+- **Process IDs and bundle identifiers**
+- **Window title changes** (when available)
 
-## 🗂️ Data Organization
+### 📂 File System Events
+- **File creation, modification, deletion**
+- **File and directory renames**
+- **Real-time file system monitoring**
+- **Path information for all changes**
 
-The tool creates a structured data folder in your home directory:
+### 🌐 Network Events
+- **Network activity monitoring**
+- **Connection tracking** (simplified)
+- **Protocol identification**
 
-```
-~/usage_monitor_data/
-├── screenshots/           # Automatic screenshots
-│   ├── screenshot_1_2025-07-19T02-55-51.png
-│   └── screenshot_2_2025-07-19T02-56-21.png
-└── logs/                 # JSON event logs (if redirected)
-```
+### 💻 System Events
+- **CPU usage monitoring**
+- **Memory usage statistics**
+- **Battery status** (for laptops)
+- **Thermal state monitoring**
+- **System performance metrics**
 
 ## Prerequisites
 
@@ -70,115 +76,121 @@ swift build -c release
 
 ## Output Format
 
-Events are logged as structured JSON with three main categories:
+All events are logged as JSON objects to stdout with the following format:
+
+```
+[CATEGORY] {JSON_EVENT_DATA}
+```
 
 ### Categories:
-- `[USER_ACTION]` - User clicks, typing, scrolling with UI context
-- `[UI_CAPTURE]` - Periodic UI content and screenshots
-- `[APP_SWITCH]` - Application focus changes
+- `[MOUSE]` - Mouse events
+- `[KEYBOARD]` - Keyboard events
+- `[APPLICATION]` - App events
+- `[FILESYSTEM]` - File system events
+- `[NETWORK]` - Network events
+- `[SYSTEM]` - System events
 
 ### Example Output:
 
 ```json
-[USER_ACTION] {
-  "timestamp": "2025-07-19T02:55:51Z",
-  "type": "click",
-  "target": "AXButton",
-  "content": "Send Message",
-  "position": {"x": 150.5, "y": 200.3},
-  "appContext": "Messages - Chat with John",
-  "screenshot": "/Users/user/usage_monitor_data/screenshots/screenshot_1_2025-07-19T02-55-51.png"
-}
-
-[USER_ACTION] {
-  "timestamp": "2025-07-19T02:55:52Z",
-  "type": "type",
-  "content": "Hey, how's the project going?",
-  "appContext": "Messages - Chat with John"
-}
-
-[UI_CAPTURE] {
-  "timestamp": "2025-07-19T02:56:21Z",
-  "type": "periodic_capture",
-  "appName": "Messages",
-  "windowTitle": "Chat with John",
-  "textContent": "Hey, how's the project going? Great! Almost done with the API integration...",
-  "screenshotPath": "/Users/user/usage_monitor_data/screenshots/screenshot_2_2025-07-19T02-56-21.png"
-}
+[MOUSE] {"y":882.46,"x":1143.87,"timestamp":"2025-07-19T02:55:51Z","type":"move","modifierFlags":[]}
+[KEYBOARD] {"timestamp":"2025-07-19T02:55:51Z","type":"key_down","keyCode":36,"character":"\\r","modifierFlags":[],"isRepeat":false}
+[APPLICATION] {"timestamp":"2025-07-19T02:55:51Z","type":"activate","appName":"Safari","bundleId":"com.apple.Safari","processId":1234}
+[FILESYSTEM] {"path":"/Users/user/Documents/file.txt","type":"file_system_change","eventFlags":["created","file"],"timestamp":"2025-07-19T02:55:51Z"}
+[NETWORK] {"timestamp":"2025-07-19T02:55:51Z","type":"network_activity_check","networkProtocol":"tcp"}
+[SYSTEM] {"timestamp":"2025-07-19T02:55:51Z","type":"system_status","details":"{\"cpu_usage\":23.5,\"memory_usage\":{\"physical_memory\":8589934592}}"}
 ```
 
-## Perfect for LLM Integration
+## Integration with LLM
 
-The smart monitoring approach makes it ideal for:
-
-### 🤖 AI Training Data
-- **Context-rich interactions** - knows what you clicked and why
-- **Visual + text data** - screenshots paired with extracted text
-- **Conversation capture** - can see both sides of messaging apps
-- **Workflow understanding** - tracks app usage patterns
-
-### 📊 Productivity Analysis
-- **Task switching patterns** - see how you move between applications
-- **Content consumption** - what you read and interact with
-- **Work patterns** - understand focus time and distractions
-
-## Usage
+The JSON output format makes it easy to pipe the data to LLM processing systems:
 
 ```bash
-# Build and run
-swift build
-./.build/debug/UsageMonitorTool
+# Stream to a file for analysis
+./.build/debug/UsageMonitorTool > usage_log.jsonl
 
-# Or run in release mode for better performance
-swift build -c release
-./.build/release/UsageMonitorTool
+# Pipe to processing script
+./.build/debug/UsageMonitorTool | python3 process_usage_data.py
+
+# Filter specific event types
+./.build/debug/UsageMonitorTool | grep "\\[KEYBOARD\\]"
 ```
 
-## LLM Integration Examples
+## Use Cases
 
-```bash
-# Stream meaningful events to a file
-./.build/debug/UsageMonitorTool > ~/usage_data.jsonl
+### 1. Productivity Analysis
+Monitor application usage patterns, typing speed, and work habits.
 
-# Process with Python script
-./.build/debug/UsageMonitorTool | python3 analyze_usage.py
+### 2. Security Monitoring
+Track file access patterns and system interactions for security analysis.
 
-# Filter only user actions
-./.build/debug/UsageMonitorTool | grep "\\[USER_ACTION\\]"
+### 3. User Experience Research
+Analyze user interaction patterns for UX improvements.
 
-# Extract UI captures only
-./.build/debug/UsageMonitorTool | grep "\\[UI_CAPTURE\\]"
+### 4. Automation Training Data
+Generate training data for AI automation systems.
+
+### 5. Digital Wellness
+Monitor screen time and interaction patterns for health insights.
+
+## Event Types Reference
+
+### Mouse Events
+```typescript
+{
+  timestamp: Date,
+  type: "move" | "click_down" | "click_up" | "drag" | "scroll",
+  x: number,
+  y: number,
+  button?: "left" | "right" | "middle",
+  clickCount?: number,
+  scrollDelta?: {x: number, y: number},
+  pressure?: number,
+  modifierFlags: string[]
+}
 ```
 
-## Smart Filtering Features
+### Keyboard Events
+```typescript
+{
+  timestamp: Date,
+  type: "key_down" | "key_up" | "modifier_changed",
+  keyCode: number,
+  character?: string,
+  modifierFlags: string[],
+  isRepeat: boolean
+}
+```
 
-- **Batched text input** - No keystroke spam, just meaningful content
-- **Context-aware screenshots** - Only captures when something interesting happens
-- **Reduced event volume** - ~90% fewer events compared to raw monitoring
-- **Rich metadata** - Every event includes application context and UI information
+### Application Events
+```typescript
+{
+  timestamp: Date,
+  type: "launch" | "terminate" | "activate" | "deactivate",
+  appName: string,
+  bundleId?: string,
+  processId: number,
+  windowTitle?: string,
+  windowBounds?: {x: number, y: number, width: number, height: number}
+}
+```
 
-## Privacy & Security
+## Performance Considerations
 
-⚠️ **Enhanced Privacy Awareness:**
+- **Mouse movement filtering**: Only logs every 10th movement event to reduce spam
+- **Efficient event handling**: Uses Core Graphics event taps for low-level access
+- **Memory usage**: Streams events rather than storing in memory
+- **CPU impact**: Minimal CPU overhead with optimized event processing
 
-1. **Screenshot storage** - Images are saved locally in `~/usage_monitor_data/`
-2. **UI text extraction** - Can capture sensitive information from applications
-3. **Message content** - Will capture conversations, passwords, and private data
-4. **Automatic capture** - Takes screenshots every 30 seconds
-5. **Local storage only** - No data transmitted, but files contain sensitive information
+## Privacy and Security
 
-**Recommendations:**
-- Regularly clean the `~/usage_monitor_data/` directory
-- Exclude sensitive applications from monitoring if possible
-- Encrypt the data directory for additional security
-- Review captured screenshots before sharing or analyzing
+⚠️ **Important Privacy Notes:**
 
-## Performance Impact
-
-- **Minimal CPU usage** - Smart event filtering reduces processing
-- **Storage efficient** - PNG screenshots and JSON logs
-- **Memory friendly** - Streams data instead of accumulating
-- **Battery conscious** - Reduced monitoring frequency
+1. This tool captures **all** user input including passwords and sensitive information
+2. **Only use on systems you own** or have explicit permission to monitor
+3. **Secure the output data** appropriately as it contains sensitive information
+4. **Comply with local privacy laws** and regulations
+5. Consider **filtering sensitive data** before storing or transmitting
 
 ## Stopping the Tool
 
