@@ -173,7 +173,7 @@ private func searchInLocation(location: String,
         let startEnumeration = Date()
         
         // Iterate through files
-        for case let fileURL as URL in enumerator {
+        while let fileURL = enumerator.nextObject() as? URL {
             // Check for cancellation periodically
             if Task.isCancelled {
                 break
